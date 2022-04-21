@@ -109,6 +109,8 @@ CREATE TABLE CLOCK(
     time    time
 );
 
+
+DROP TABLE IF EXISTS LEGS CASCADE;
 CREATE TABLE LEGS(
     -- plan query this table in a recursive function that returns a list
     route_id       int,
@@ -137,18 +139,18 @@ CREATE TABLE TICKET(
     payed boolean default false,
     customer_id int,
     adj boolean,
-
+    day char(20),
     CONSTRAINT FK_ticket3 FOREIGN KEY(customer_id) REFERENCES PASSENGERS(customers_id) ON DELETE CASCADE,
     CONSTRAINT FK_ticket1 FOREIGN KEY (station_start) REFERENCES STATION(station_num) ON DELETE CASCADE,
     CONSTRAINT FK_ticket2 FOREIGN KEY (station_end) REFERENCES STATION(station_num) ON DELETE CASCADE
-)
+);
 CREATE TABLE RESERVATION(
     reservation_id  serial primary key,
     ticket_id       int,
     customer_id     int,
     day             char(20),
     time            time,
-    ticketed        boolean,
+    ticketed        boolean default false,
     --schedule_id     int references TRAIN_SCHEDULE,
     cost            int,
     legs_id         int,
@@ -169,39 +171,150 @@ CREATE TABLE PATHY(
     stations_passed int,
     legs char(500)
 
-)
+);
+--- functions
+DROP FUNCTION if exists int_equal(int, int) CASCADE;
+CREATE or replace function int_equal (a int, b int)
+    RETURNS BOOLEAN AS $$
+    BEGIN
+        IF a = b THEN
+            return TRUE;
+        ELSE
+            return FALSE;
+        end if;
+    END
+        $$language plpgsql;
+
+
+DROP FUNCTION if exists greater_than (int, int) CASCADE;
+CREATE or replace function greater_than (a int, b int)
+    RETURNS BOOLEAN AS $$
+    BEGIN
+        IF a > b THEN
+            return TRUE;
+        ELSE
+            return FALSE;
+        end if;
+    END
+        $$language plpgsql;
+
+
+
+
+
+
 
 -- triggers 1
--- trigger 1 doesnt work
-/*
 DROP FUNCTION if exists line_disruption_function() CASCADE;
-DROP TRIGGER IF EXISTS line_disruption on reservation;
+DROP TRIGGER IF EXISTS line_disruption on rail_lines;
+DROP FUNCTION if exists recursion_start(integer,integer,character,integer,integer);
+DROP FUNCTION if exists recursion(integer,integer,character,integer,integer,int, time without time zone);
+Create or replace FUNCTION  recursion(rcustomer_id int,rticket_id int,rday char(20), curr int, stops int, dest int, rarrival_time Time)
+returns Boolean as $$
+    DECLARE
+        w record;
+         ---S3 CURSOR FOR SELECT * from LEGS WHERE curr = station_start and start_day = rday and end_day = rday and working = true and available_seats > 0 and departure_time > rarrival_time;
+    Begin
+        IF curr = dest
+            then
+            return true;
+        end if;
+        IF stops > 5 --- this is to limit the amount of stops
+            then
+            return false;
+        end if;
+        ---open S3;
+        for w in SELECT * from LEGS WHERE curr = station_start and start_day = rday and end_day = rday and working = true and available_seats > 0 and departure_time >= rarrival_time
+            loop
+            if(recursion(rcustomer_id, rticket_id, rday,w.station_end, stops + 1, dest, w.arrival_time) )
+                then
+                insert into reservation(ticket_id, customer_id, day, time, ticketed, cost, legs_id) VALUES (rticket_id, rcustomer_id, rday, rarrival_time, false, w.cost, w.legs_id);
+                update Legs set available_seats = available_seats - 1 where legs_id = w.legs_id;
+                ---close s3;
+                return true;
+            end if;
+            end loop;
+    ---close s3;
+    return false;
+    end;
+$$language plpgsql;
+
+
+Create or replace FUNCTION  recursion_start(rcustomer_id int, rticket_id int, rday char(20), curr int, dest int)
+returns Boolean as $$
+    DECLARE
+    C1 Record;
+    S2 CURSOR FOR SELECT * from LEGS WHERE curr = station_start and start_day = rday and working = true and available_seats > 0;
+    Begin
+    ---open S2;
+    for C1 in SELECT * from LEGS WHERE curr = station_start and start_day = rday and working = true and available_seats > 0 order by legs_id
+        loop
+            if recursion(rcustomer_id,rticket_id,rday,C1.station_end, 1, dest, C1.arrival_time )
+                THEN
+                insert into reservation(ticket_id, customer_id, day, time, ticketed, cost, legs_id) VALUES (rticket_id, rcustomer_id, rday, C1.departure_time, false, C1.cost, C1.legs_id);
+                update Legs set available_seats = available_seats - 1 where legs_id = C1.legs_id;
+                return true;
+            end if;
+        end loop;
+    return false;
+    end;
+$$language plpgsql;
+
+
+
 
 CREATE or REPLACE function line_disruption_function()
 returns trigger as $$
+    DECLARE
+        w record;
+        S1 CURSOR FOR SELECT * FROM TICKET WHERE adj = True and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
     begin
-    UPDATE ROUTE set working = FALSE WHERE route_id in (SELECT route_id FROM STATION_ROUTE_RELATION WHERE line_id in (SELECT line_id from OLD));
+    UPDATE ROUTE set working = FALSE WHERE route_id in (SELECT route_id FROM STATION_ROUTE_RELATION WHERE line_id = OLD.line_id);
     UPDATE LEGS set working = FALSE WHERE route_id in (SELECT route_id FROM route WHERE working = false);
-    DECLARE S1 CURSOR FOR SELECT * FROM TICKET WHERE ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
-    OPEN CURSOR S1;
-    FOR * something in S1
-    LOOP;
-        if something.
+    DELETE FROM TICKET WHERE adj = false and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
+    ---open S1;
+    FOR w in SELECT * FROM TICKET WHERE adj = True and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false))
+    LOOP
+        Delete from reservation where ticket_id in (SELECT ticket_id FROM w);
+        if not recursion_start( w.customer_id,w.ticket_id,w.day, w.station_start, w.station_end )
+            then
+            Delete from ticket where ticket_id = w.ticket_id;
+        end if;
+    ---DELETE FROM RESERVATION where ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
     END LOOP;
-    return;
+    ---close s1;
+    Delete from route where working = false;
+    delete from legs where working = false;
+
+    return old;
         end;
     $$
     language plpgsql;
+
+CREATE or REPLACE function increment_seats()
+returns trigger as $$
+    BEGIN
+        UPDATE LEGS set available_seats = available_seats + 1 WHERE legs_id = old.legs_id;
+    end;$$ language plpgsql;
+drop trigger if exists increment_seats on reservation;
+
+CREATE TRIGGER increment_seats
+    BEFORE delete
+    on reservation
+    for each ROW
+        WHEN (OLD.legs_id is not null)
+    EXECUTE FUNCTION increment_seats();
+
+
 
 CREATE TRIGGER line_disruption
     BEFORE delete
     on rail_lines
     for each ROW
-        WHEN (OLD.line_id != null )
+        WHEN (OLD.line_id is not null )
     EXECUTE FUNCTION line_disruption_function();
 
 
-*/
 -- triggers 2
 DROP FUNCTION if exists reservation_cancel_function() CASCADE;
 
@@ -213,11 +326,13 @@ CREATE or REPLACE FUNCTION reservation_cancel_function()
     BEGIN
        -- update reservation
         DELETE FROM reservation
-        where ticketed ='false' AND time + interval'2 hours' < NEW.time;
+        where ticketed ='false' AND time + interval'2 hours' < NEW.time AND day = new.day;
         return new;
     END;
     $$
     LANGUAGE plpgsql;
+
+
 CREATE TRIGGER reservation_cancel
     after update of time
     on CLOCK
@@ -226,5 +341,63 @@ CREATE TRIGGER reservation_cancel
             NEW.time is not null
             )
     EXECUTE FUNCTION reservation_cancel_function();
+
+--- function for single route search
+DROP PROCEDURE if exists single_route(integer,character,integer,integer,integer,integer,time without time zone,integer,integer,character,time without time zone,integer);
+Create or Replace PROCEDURE single_route( Rroute_id int, day char(20), curr int,Rtrain_id int, rstops int, Rcost int , Rarrival_time Time, passes int, dest int, legy text, rstart_time Time, depth int)
+as
+$$
+    DECLARE
+        C1 RECORD;
+        next_legy text;
+BEGIN
+    if curr = dest then
+        INSERT INTO PATHY(cost, stops, arrival_time, stations_passed, legs, start_time) VALUES(Rcost, rstops ,Rarrival_time, passes, legy, rstart_time);
+        return;
+    end if;
+    if rstops > 20 then
+        return;
+    end if;
+    ---open RC;
+    for C1 IN SELECT * FROM LEGS WHERE station_start = curr AND start_day = day AND end_day = day  AND available_seats > 0 AND working = 'true' AND train_id = Rtrain_id  AND route_id = Rroute_id AND departure_time >= Rarrival_time  AND working = 'true' AND available_seats > 0 ORDER BY legs_id
+    LOOP
+        next_legy := TRIM(legy)|| ', '||C1.legs_id;
+
+         CALL single_route(Rroute_id, day, C1.station_end,Rtrain_id,rstops + 1, (C1.cost+ Rcost), C1.arrival_time, (C1.stations_passed + passes), dest,next_legy, rstart_time, depth);
+    end loop;
+
+    ---close RC;
+    return;
+    end;$$LANGUAGE plpgsql;
+
+
+
+DROP PROCEDURE if exists multi_route(character,integer,integer,integer,time without time zone,integer,integer,character,time without time zone,integer);
+--- function for multiple routes
+Create or Replace procedure multi_route(day char(20), curr int, rstops int, Rcost int , Rarrival_time Time, passes int, dest int, legy char(500), rstart_time Time, depth int)
+as
+$$
+    DECLARE
+        C1 record;
+        next_legy text;
+BEGIN
+    if curr = dest then
+        INSERT INTO PATHY(cost, stops, arrival_time, stations_passed, legs, start_time) VALUES(Rcost, rstops ,Rarrival_time, passes, legy, rstart_time);
+        return;
+    end if;
+    if rstops > depth then
+        return;
+    end if;
+    ---open RC;
+    for C1 IN SELECT * FROM LEGS WHERE station_start = curr AND start_day = day AND end_day = day  AND available_seats > 0 AND working = 'true' AND departure_time >= Rarrival_time  AND working = 'true' AND available_seats > 0 ORDER BY legs_id
+    LOOP
+        next_legy := TRIM(legy)|| ', '||C1.legs_id;
+        call multi_route(day, C1.station_end,rstops + 1, Rcost+C1.cost, C1.arrival_time, passes + C1.stations_passed, dest,(TRIM(legy)|| ', '||C1.legs_id), rstart_time, depth);
+    end loop;
+    ---close RC;
+    return;
+    end;$$LANGUAGE plpgsql;
+
+
 
 

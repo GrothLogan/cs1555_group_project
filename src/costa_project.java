@@ -44,6 +44,29 @@ public class costa_project {
                     operator();
                     //call to passenger service operator code
                 }
+                /*
+                else if (choice == 3)
+                {
+                    Class.forName("org.postgresql.Driver");
+                    String url = "jdbc:postgresql://localhost:5432/postgres";
+                    Properties props = new Properties();
+                    props.setProperty("user", "username"); //made this a superuser
+                    props.setProperty("password", "password"); 
+                    Connection conn =
+                            DriverManager.getConnection(url, props);
+                    Statement st = conn.createStatement();
+                    CallableStatement cstmt = conn.prepareCall("{? = call int_equal(?,?)}");
+                    cstmt.registerOutParameter(1, Types.BOOLEAN);
+                    cstmt.setInt(1, 1);
+                    cstmt.setInt(2, 1);
+                    cstmt.execute();
+                    if(cstmt.getBoolean(1))
+                    {
+                        //something
+                    }
+                    //test stuff
+                }
+                */
                 else
                 {
                     System.out.println("not an option");
@@ -298,8 +321,13 @@ public class costa_project {
         {
             System.out.println("in trip search");
             Scanner myObj = new Scanner(System.in);
-            System.out.println("what day");
-            String day = myObj.nextLine();
+            String day = "";
+            while (day.equals("Monday")  == false && day.equals("Tuesday") == false && day.equals("Wednesday") == false && day.equals("Thursday") == false && day.equals("Friday") == false && day.equals("Saturday") == false && day.equals("Sunday") == false)
+            {
+                System.out.println("What day (FIrst letter capital the rest lower case example 'Saturday')");
+                //myObj.nextLine();
+                day = myObj.nextLine();
+            }
             System.out.println("where are you leaving from? (station id)");
             int start = myObj.nextInt();
             System.out.println("where are you going? (station id)");
@@ -341,16 +369,17 @@ public class costa_project {
                         int passes = legs.getInt("stations_passed");
                         int cost = legs.getInt("cost");
                         int leg_id = legs.getInt("legs_id");
-                        String legy = leg_id + " ";
+                        String legy = leg_id + "";
                         int depth = 30;
-                        recursive_search(route_id, day, curr, train_id, stops, cost, arrival_time, passes, dest, legy, timstar, conn, st, depth);
+                        CallableStatement cstmt = conn.prepareCall("call single_route("+route_id+",'"+day+"',"+curr+","+train_id+","+stops+","+cost+",'"+arrival_time+"',"+passes+","+dest+",'"+legy+"','"+timstar+"',"+depth+")");
+                        //recursive_search(route_id, day, curr, train_id, stops, cost, arrival_time, passes, dest, legy, timstar, conn, st, depth);
+                        cstmt.execute();
                         legs.next();
                     }
-
                 }
                 catch(SQLException e1)
                 {
-                    System.out.print("no routes");
+                    //System.out.print("no routes");
                     System.out.print(e1.toString());
                 }
                 System.out.println("ordered by? \n1) price \n2) total time\n3) stops\n4)stations");
@@ -380,11 +409,16 @@ public class costa_project {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
                     }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
+                    }
                     //order by price
                 }
                 if(choice2 == 2)
                 {
-                    ResultSet legs2 = st.executeQuery("SELECT * FROM PATHY order by (start_time - arrival_time) ASC ");
+                    ResultSet legs2 = st.executeQuery("SELECT * FROM PATHY order by (arrival_time - start_time) ASC ");
                     legs2.next();
                     int j = 0;
                     try
@@ -406,6 +440,11 @@ public class costa_project {
                     {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
                     }
                     //just assume it always travels at max speed
                     //order by time 
@@ -435,6 +474,11 @@ public class costa_project {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
                     }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
+                    }
                     //order by stops
                 }
                 if(choice2 == 4)
@@ -461,6 +505,11 @@ public class costa_project {
                     {
                         System.out.println("no routes");
                         System.out.println(e1.toString());
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
                     }
                     //order by stations
                 }
@@ -501,15 +550,18 @@ public class costa_project {
                         int passes = legs.getInt("stations_passed");
                         int cost = legs.getInt("cost");
                         int leg_id = legs.getInt("legs_id");
-                        String legy = leg_id + " ";
-                        recursive_search2( day, curr, stops, cost, arrival_time, passes, dest, legy, timstar, conn, st, depth);
+                        String legy = leg_id + "";
+                        //System.out.println(legy);
+                        CallableStatement cstmt2 = conn.prepareCall("call multi_route('" +day+ "',"+curr+","+stops+","+cost+",'"+arrival_time+"',"+passes+","+dest+",'"+legy+"','"+timstar+"',"+depth+")");
+                        //recursive_search2( day, curr, stops, cost, arrival_time, passes, dest, legy, timstar, conn, st, depth);
+                        cstmt2.execute();
                         legs.next();
                     }
 
                 }
                 catch(SQLException e1)
                 {
-                    System.out.print("no routes");
+                    //System.out.print("no routes");
                     System.out.print(e1.toString());
                 }
                 System.out.println("ordered by? \n1) price \n2) total time\n3) stops\n4)stations");
@@ -539,17 +591,23 @@ public class costa_project {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
                     }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
+                    }
                     //order by price
                 }
                 if(choice2 == 2)
                 {
-                    ResultSet legs2 = st.executeQuery("SELECT * FROM PATHY order by (start_time - arrival_time) ASC ");
+                    ResultSet legs2 = st.executeQuery("SELECT * FROM PATHY order by (arrival_time - start_time) ASC ");
                     legs2.next();
                     int j = 0;
                     try
                     {
                         while(j < 10 && legs2.isAfterLast() != true)
                         {
+                            
                             System.out.println("cost: " + legs2.getInt("cost"));
                             System.out.println("stations_passed: " + legs2.getInt("stations_passed"));
                             System.out.println("stops: " + legs2.getInt("stops"));
@@ -565,6 +623,11 @@ public class costa_project {
                     {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
                     }
                     //just assume it always travels at max speed
                     //order by time 
@@ -594,6 +657,11 @@ public class costa_project {
                         System.out.print("no routes");
                         System.out.print(e1.toString());
                     }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
+                    }
                     //order by stops
                 }
                 if(choice2 == 4)
@@ -620,6 +688,11 @@ public class costa_project {
                     {
                         System.out.println("no routes");
                         System.out.println(e1.toString());
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.print("no routes");
+                        //System.out.print(e1.toString());
                     }
                     //order by stations
                 }
@@ -655,6 +728,7 @@ public class costa_project {
 
         ResultSet next = st.executeQuery("SELECT * FROM LEGS WHERE station_start = " + curr + " AND start_day = '" + day + "' AND end_day = '" + day +"' AND available_seats > 0 AND working = 'true' AND train_id = " + train_id + " AND route_id = " + route_id );
         next.next();
+
         if(curr == dest)
         {
             try
@@ -691,7 +765,7 @@ public class costa_project {
                 {
                     f = 1;
                 }
-                if(h1 == h2 && m1 < m2)
+                if(h1 == h2 && m1 <= m2)
                 {
                     f = 1;
                 }
@@ -699,7 +773,8 @@ public class costa_project {
                 {
                     try
                     {
-                        recursive_search(route_id, day, next.getInt("station_end"), train_id, stops + 1, cost +next.getInt("cost") , next.getTime("arrival_time"), passes + next.getInt("stations_passed"), dest, legy + " "+ next.getInt("legs_id"), start_time, conn, st, depth - 1);
+                        System.out.println(legy);
+                        recursive_search(route_id, day, next.getInt("station_end"), train_id, stops + 1, cost +next.getInt("cost") , next.getTime("arrival_time"), passes + next.getInt("stations_passed"), dest, legy + ", "+ next.getInt("legs_id"), start_time, conn, st, depth - 1);
                     }
                     catch(SQLException e)
                     {
@@ -740,7 +815,7 @@ public class costa_project {
              }
             }
         }
-        if(depth < 1)
+        if(depth < 1) // so it doesnt go forever
         {
             return;
         }
@@ -758,7 +833,7 @@ public class costa_project {
                 {
                     f = 1;
                 }
-                if(h1 == h2 && m1 < m2)
+                if(h1 == h2 && m1 <= m2)
                 {
                     f = 1;
                 }
@@ -766,7 +841,7 @@ public class costa_project {
                 {
                     try
                     {
-                        recursive_search2( day, next.getInt("station_end"), stops + 1, cost +next.getInt("cost") , next.getTime("arrival_time"), passes + next.getInt("stations_passed"), dest, legy + " "+ next.getInt("legs_id"), start_time, conn, st, depth - 1);
+                        recursive_search2( day, next.getInt("station_end"), stops + 1, cost +next.getInt("cost") , next.getTime("arrival_time"), passes + next.getInt("stations_passed"), dest, legy + ", "+ next.getInt("legs_id"), start_time, conn, st, depth - 1);
                     }
                     catch(SQLException e)
                     {
@@ -803,13 +878,20 @@ public class costa_project {
             int cust = myObj.nextInt();
             System.out.println("id of start station");
             int start = myObj.nextInt();
+            String day = "";
+            while (day.equals("Monday")  == false && day.equals("Tuesday") == false && day.equals("Wednesday") == false && day.equals("Thursday") == false && day.equals("Friday") == false && day.equals("Saturday") == false && day.equals("Sunday") == false)
+            {
+                System.out.println("What day (FIrst letter capital the rest lower case example 'Saturday')");
+                //myObj.nextLine();
+                day = myObj.nextLine();
+            }
             System.out.println("id of end station");
             int end = myObj.nextInt();
             System.out.println("do you want your ticket to be auto adjusted: \n 0) no \n 1) yes");
             int adj = myObj.nextInt();
             try{
                 conn.setAutoCommit(false);
-                st.executeUpdate(String.format("INSERT INTO TICKET(station_start, station_end, customer_id, adj) VALUES( %d, %d, %d, '%d')",start,end,cust, adj));
+                st.executeUpdate(String.format("INSERT INTO TICKET(station_start, station_end, customer_id, adj, day) VALUES( %d, %d, %d, '%d', '%s')",start,end,cust, adj, day));
                 conn.commit();
                 ResultSet newticket = st.executeQuery("SELECT * FROM TICKET WHERE ticket_id IN (SELECT MAX(ticket_id) FROM TICKET )");
                 newticket.next();
@@ -823,19 +905,19 @@ public class costa_project {
                     try
                     {
 
-                        String day = legs.getString("day");
+                        String day2 = legs.getString("start_day");
                         Time time = legs.getTime("departure_time");
                         int cost = legs.getInt("cost");
                         int available = legs.getInt("available_seats");
                         boolean working = legs.getBoolean("working");
                         if(available <= 0 || working != true)
                         {
-                            System.out.println("or line not in service");
                             System.out.println("no available seats");
+                            System.out.println("or line not in service");
                         }
                         else
                         {
-                            String k = String.format("INSERT INTO RESERVATION(customer_id, day, time, cost, legs_id, ticket_id) VALUES (%d, '%s', '%s', %d, %d, %d);", cust, day, time, cost, leg, ticket_id );
+                            String k = String.format("INSERT INTO RESERVATION(customer_id, day, time, cost, legs_id, ticket_id) VALUES (%d, '%s', '%s', %d, %d, %d);", cust, day2, time, cost, leg, ticket_id );
                             // System.out.println(k);
                             try
                             {
@@ -903,13 +985,14 @@ public class costa_project {
         while(true)
         {
             Scanner myObj = new Scanner(System.in);
-            System.out.println("What reservation is being ticketed");
+            System.out.println("What ticket is being ticketed");
             int res_id = myObj.nextInt();
             try
             {
                 conn.setAutoCommit(false);
-                st.executeUpdate("UPDATE TICKET SET ticketed = true WHERE ticket_id = " + res_id);
+                st.executeUpdate("UPDATE TICKET SET payed = true WHERE ticket_id = " + res_id);
                 conn.commit();
+                st.executeUpdate("UPDATE RESERVATION SET ticketed = true WHERE ticket_id = " + res_id);
             }
             catch (SQLException e1) {
                 System.out.println(e1.toString());
@@ -959,12 +1042,17 @@ public class costa_project {
 
                 System.out.println("what station");
                 int station = myObj.nextInt();
-                System.out.println("what day");
-                myObj.nextLine();
-                String day = myObj.nextLine();
+                //System.out.println("what day");
+                String day = "";
+                while (day.equals("Monday")  == false && day.equals("Tuesday") == false && day.equals("Wednesday") == false && day.equals("Thursday") == false && day.equals("Friday") == false && day.equals("Saturday") == false && day.equals("Sunday") == false)
+                {
+                    System.out.println("What day (FIrst letter capital the rest lower case example 'Saturday')");
+                    //myObj.nextLine();
+                    day = myObj.nextLine();
+                }
                 System.out.println("what hour 0-23");
                 int time = myObj.nextInt();
-                ResultSet trains = st.executeQuery("SELECT * FROM LEGS WHERE day = '" + day +"' AND station_start = " + station );
+                ResultSet trains = st.executeQuery("SELECT * FROM LEGS WHERE start_day = '" + day +"' AND station_start = " + station );
                 int i = 0;
                 trains.next();
                 try
@@ -974,7 +1062,12 @@ public class costa_project {
                     {   
                         Time departure_time = trains.getTime("departure_time");
                         int w = departure_time.getHours();
-                        if(w == time)
+                        CallableStatement cstmt = conn.prepareCall("{? = call int_equal("+w+","+time+")}");
+                        cstmt.registerOutParameter(1, Types.BOOLEAN);
+                        //cstmt.setInt(1, (int)percentage);
+                        //cstmt.setInt(2, percent);
+                        cstmt.execute();
+                        if(cstmt.getBoolean(1))
                         {
                             System.out.println(trains.getInt("train_id"));
                         }
@@ -1003,7 +1096,13 @@ public class costa_project {
                     System.out.println("routes:");
                     while(multi_rail.isAfterLast() != true)
                     {
-                        if(multi_rail.getInt(2) > 1)
+                        int a = multi_rail.getInt(2);
+                        CallableStatement cstmt = conn.prepareCall("{? = call greater_than("+a+","+1+")}");
+                        cstmt.registerOutParameter(1, Types.BOOLEAN);
+                        //cstmt.setInt(1, (int)percentage);
+                        //cstmt.setInt(2, percent);
+                        cstmt.execute();
+                        if(cstmt.getBoolean(1))
                         {
                             System.out.println(multi_rail.getInt(1));
                         }
@@ -1074,13 +1173,61 @@ public class costa_project {
                                 c4.next();
                                 c5.next();
                                 c6.next();
+                                int a1 = c1.getInt(1);
+                                int a2 = c2.getInt(1);
+                                int a3 = c3.getInt(1);
+                                int a4 = c4.getInt(1);
+                                int a5 = c5.getInt(1);
+                                int a6 = c6.getInt(1);
                                 try
                                 {
+                                    
+                                    CallableStatement cstmt = conn.prepareCall("{? = call int_equal("+a1+","+a2+")}");
+                                    cstmt.registerOutParameter(1, Types.BOOLEAN);
+                                    //cstmt.setInt(1, a1);
+                                    //cstmt.setInt(2, a2);
+                                    cstmt.execute();
+                                    if(cstmt.getBoolean(1))
+                                    {
+                                        CallableStatement cstmt2 = conn.prepareCall("{? = call int_equal("+a5+","+a2+")}");
+                                        cstmt2.registerOutParameter(1, Types.BOOLEAN);
+                                        //cstmt2.setInt(1, a5);
+                                        //cstmt2.setInt(2, a2);
+                                        cstmt2.execute();
+                                        if(cstmt2.getBoolean(1))
+                                        {
+
+                                        
+                                            CallableStatement cstmt3 = conn.prepareCall("{? = call int_equal("+a3+","+a4+")}");
+                                            cstmt3.registerOutParameter(1, Types.BOOLEAN);
+                                            //cstmt3.setInt(1, a3);
+                                            //cstmt3.setInt(2, a4);
+                                            cstmt3.execute();
+                                            if(cstmt3.getBoolean(1) == false)
+                                            {
+                                                CallableStatement cstmt4 = conn.prepareCall("{? = call int_equal("+a6+","+a4+")}");
+                                                cstmt4.registerOutParameter(1, Types.BOOLEAN);
+                                                //cstmt4.setInt(1, a6);
+                                                //cstmt4.setInt(2, a4);
+                                                cstmt4.execute();
+                                                if(cstmt4.getBoolean(1) == false)
+                                                {
+                                                    f = f + " " + rid2;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    //cstmt4.execute();
+                                    //System.out.println(f)
+
+                                    //if(cstmt.getBoolean(1) == true && cstmt2.getBoolean(1) == true &&cstmt3.getBoolean(1) != true && cstmt4.getBoolean(1) != true)
+                                    /*
                                     if(c1.getInt(1) == c2.getInt(1) && c3.getInt(1) != c4.getInt(1) && c5.getInt(1) == c2.getInt(1) && c6.getInt(1) != c4.getInt(1) )
                                     {
 
                                         f = f + " " + rid2;
                                     }
+                                    */
                                 }
                                 catch(SQLException e)
                                 {
@@ -1131,7 +1278,12 @@ public class costa_project {
                             ResultSet temp = st.executeQuery("SELECT COUNT(DISTINCT train_id) FROM TRAIN_SCHEDULE WHERE route_id in (SELECT route_id FROM STATION_ROUTE_RELATION WHERE station_num = "+sid+" )");
                             temp.next();
                             try {
-                                if(temp.getInt(1) == tc)
+                                CallableStatement cstmt = conn.prepareCall("{? = call int_equal("+temp.getInt(1)+","+tc+")}");
+                                cstmt.registerOutParameter(1, Types.BOOLEAN);
+                                //cstmt.setInt(1, (int)percentage);
+                                //cstmt.setInt(2, percent);
+                                cstmt.execute();
+                                if(cstmt.getBoolean(1))
                                 {
                                     System.out.println(sid);
                                 }
@@ -1176,7 +1328,7 @@ public class costa_project {
                     System.out.println(e.toString());
                 }
                 //Find all the trains that do not stop at a specific station
-                System.out.println("advanced search");
+                //System.out.println("advanced search");
                 //call to passenger service operator code
             }
             else if (choice == 7)
@@ -1194,7 +1346,12 @@ public class costa_project {
                         double scount = perc.getInt(3);
                         double percentage = tcount / scount;
                         percentage = percentage * 100;
-                        if(percentage > percent)
+                        CallableStatement cstmt = conn.prepareCall("{? = call greater_than("+(int) percentage+","+percent+")}");
+                        cstmt.registerOutParameter(1, Types.BOOLEAN);
+                        //cstmt.setInt(1, (int)percentage);
+                        //cstmt.setInt(2, percent);
+                        cstmt.execute();
+                        if(cstmt.getBoolean(1))
                         {
                             System.out.println("route_id = "  + perc.getInt(1) + " stopping " + perc.getInt(2) + " times at "  + perc.getInt(3) + "stations or " + percentage +"% of the time");
                         }
@@ -1238,21 +1395,30 @@ public class costa_project {
 
                 System.out.println("What is the route id");
                 int rid = myObj.nextInt();
-                System.out.println("What is the day");
-                myObj.nextLine();
-                String day = myObj.nextLine();
+                String day = "";
+                while (day.equals("Monday")  == false && day.equals("Tuesday") == false && day.equals("Wednesday") == false && day.equals("Thursday") == false && day.equals("Friday") == false && day.equals("Saturday") == false && day.equals("Sunday") == false)
+                {
+                    System.out.println("What day (FIrst letter capital the rest lower case example 'Saturday')");
+                    //myObj.nextLine();
+                    day = myObj.nextLine();
+                }
                 System.out.println("What is the time (0-23)");
                 int tim = myObj.nextInt();
-                ResultSet avail = st.executeQuery("SELECT * FROM LEGS WHERE route_id = " + rid + " AND day = '" + day +"' AND working = 'true' AND available_seats > 0");
+                ResultSet avail = st.executeQuery("SELECT * FROM LEGS WHERE route_id = " + rid + " AND start_day = '" + day +"' AND working = 'true' AND available_seats > 0");
                 avail.next();
-                System.out.println("availaable at: ");
+                System.out.println("available at: ");
                 try
                 {
                     while(avail.isAfterLast() != true)
                     {
                         Time depart_time = avail.getTime("departure_time");
                         int h = depart_time.getHours();
-                        if(h == tim)
+                        CallableStatement cstmt = conn.prepareCall("{? = call int_equal(?,?)}");
+                        cstmt.registerOutParameter(1, Types.BOOLEAN);
+                        cstmt.setInt(1, tim);
+                        cstmt.setInt(2, h);
+                        cstmt.execute();
+                        if(cstmt.getBoolean(1))
                         {
                             System.out.println(avail.getInt("station_start"));
                         }
@@ -1872,7 +2038,6 @@ public class costa_project {
             route.next();
             while(route.isAfterLast() != true && route.getInt("speed_limit") != 0)
             {
-                
                 int start  = route.getInt("station_num");
                 int i = 1; // i is stations
                 //int speedlim = route.getInt("speed_limit");
@@ -1885,23 +2050,26 @@ public class costa_project {
                 int travel_time = (int)(((double)dist/speedlim) * 60);
                 int hour = temp_start.getHours();
                 int minute = temp_start.getMinutes();
-                while(route.next())
+                ResultSet route2 = st.executeQuery("SELECT * FROM STATION_ROUTE_RELATION WHERE route_id = " + rid + " AND station_order >"+route.getInt("station_order") +"ORDER BY station_order ASC;");
+                route2.next();
+                while(route2.isAfterLast() != true)
                 {
-                    boolean stop = route.getBoolean("stop");
+                    boolean stop = route2.getBoolean("stop");
                     if(stop)
                     {
                         break;
                     }
-                    speedlim = route.getInt("speed_limit");
+                    speedlim = route2.getInt("speed_limit");
                     if(speedlim > top_speed)
                     {
                         speedlim = top_speed;
                     }
-                    dist = dist + route.getInt("distance");
+                    dist = dist + route2.getInt("distance");
                     travel_time = travel_time + (int)(((double)dist/speedlim) * 60);
                     i++;
+                    route2.next();
                 }
-                int end = route.getInt("station_num");
+                int end = route2.getInt("station_num");
                 ResultSet station = st.executeQuery("SELECT * FROM STATION WHERE station_num = " + end + ";");
                 station.next();
                 int cost = cost_per_km * dist;
@@ -1964,13 +2132,14 @@ public class costa_project {
                 temp_start.setHours(hour);
                 temp_start.setMinutes(minute);
                 route.next();
+                while(route.getBoolean("stop") != true && route.isAfterLast() != true)
+                {
+                    route.next();
+                }
             }
         }
 
     }
-
-
-
 
 
     // export the data
@@ -1980,7 +2149,7 @@ public class costa_project {
         while(true)
         {
             Scanner myObj = new Scanner(System.in);
-            System.out.println("what table are you exporting? \n 0) back \n 1)stations \n 2) rail_lines \n 3) trains \n 4) routes \n 5)route_schedule \n 6)customers \n 7) build legs");
+            System.out.println("what table are you exporting? \n 0) back \n 1)stations \n 2) rail_lines \n 3) trains \n 4) routes \n 5)route_schedule \n 6)customers");
             int choice = myObj.nextInt();
             if(choice == 0)
             {
@@ -1993,27 +2162,23 @@ public class costa_project {
             else if (choice == 4)
             {
                 // should actually export Station_route_relation
-                //export_routes();
+                export_routes();
             }
             else if (choice == 5)
             {
-                //export_route_schedule();
+                export_route_schedule();
             }
             else if (choice == 1)
             {
-               // export_stations();
+                export_stations();
             }
             else if (choice == 3)
             {
-                //export_trains();
+                export_trains();
             }
             else if (choice == 6)
             {
-                //export_customers();
-            }
-            else if (choice == 7)
-            {
-                //export_legs();
+                export_customers();
             }
             else
             {
@@ -2022,6 +2187,204 @@ public class costa_project {
             System.out.println("");
         }
 
+    }
+
+    public static void export_customers()throws
+    SQLException, ClassNotFoundException 
+    {
+        
+        Class.forName("org.postgresql.Driver");
+        String url = "jdbc:postgresql://localhost:5432/postgres";
+        Properties props = new Properties();
+        props.setProperty("user", "username"); //made this a superuser
+        props.setProperty("password", "password"); 
+        Connection conn =
+                DriverManager.getConnection(url, props);
+        Statement st = conn.createStatement();
+        ResultSet cust = st.executeQuery("SELECT * FROM PASSENGERS");
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("Type the filename ");
+        String fname = myObj.nextLine() +".csv";
+        try
+        {
+        BufferedWriter fw = new BufferedWriter(new FileWriter(fname));
+        fw.write("id, fname, lname, street, town, postal");
+        cust.next();
+        while(cust.isAfterLast() != true)
+        {
+            int id = 0;
+            String first_name = "";
+            String lname = "";
+            String street = "";
+            String town = "";
+            String postal = "";
+            try
+            {
+                id = cust.getInt("customers_id");
+                first_name = cust.getString("fname");
+                lname = cust.getString("lname");
+                street = cust.getString("street");
+                town = cust.getString("town");
+                postal = cust.getString("postal_code");
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            
+            String line = String.format("%d,%s,%s,%s,%s,%s", id, first_name.trim(), lname.trim(), street.trim(), town.trim(), postal.trim());
+            try
+            {
+                fw.newLine();
+                fw.write(line);
+            }
+            catch(Exception e)
+            {
+                System.out.println(e.toString());
+            }
+            cust.next();
+        }
+        fw.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.toString());
+        }
+        
+    }
+
+
+
+    public static void export_trains()throws
+    SQLException, ClassNotFoundException 
+    {
+        
+        Class.forName("org.postgresql.Driver");
+        String url = "jdbc:postgresql://localhost:5432/postgres";
+        Properties props = new Properties();
+        props.setProperty("user", "username"); //made this a superuser
+        props.setProperty("password", "password"); 
+        Connection conn =
+                DriverManager.getConnection(url, props);
+        Statement st = conn.createStatement();
+        ResultSet trains = st.executeQuery("SELECT * FROM TRAIN");
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("Type the filename ");
+        String fname = myObj.nextLine() +".csv";
+        try
+        {
+        BufferedWriter fw = new BufferedWriter(new FileWriter(fname));
+        fw.write("train_id,name,description,top_speed,seats,price_per_km");
+        trains.next();
+        while(trains.isAfterLast() != true)
+        {
+            int train_id = 0;
+            String name = "";
+            int top_speed = 0;
+            int seats = 0;
+            int price = 0;
+            String description = "";
+            try
+            {
+                train_id = trains.getInt("train_id");
+                name = trains.getString("name");
+                top_speed = trains.getInt("top_speed");
+                seats = trains.getInt("seats");
+                price = trains.getInt("price_per_km");
+                description = trains.getString("description");
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            
+            String line = String.format("%d,%s,%s,%d,%d,%d", train_id, name.trim(), description.trim(), top_speed, seats, price);
+            try
+            {
+                fw.newLine();
+                fw.write(line);
+            }
+            catch(Exception e)
+            {
+                System.out.println(e.toString());
+            }
+            trains.next();
+        }
+        fw.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.toString());
+        }
+        
+    }
+    public static void export_stations()throws
+    SQLException, ClassNotFoundException 
+    {
+        
+        Class.forName("org.postgresql.Driver");
+        String url = "jdbc:postgresql://localhost:5432/postgres";
+        Properties props = new Properties();
+        props.setProperty("user", "username"); //made this a superuser
+        props.setProperty("password", "password"); 
+        Connection conn =
+                DriverManager.getConnection(url, props);
+        Statement st = conn.createStatement();
+        ResultSet stat = st.executeQuery("SELECT * FROM STATION");
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("Type the filename ");
+        String fname = myObj.nextLine() +".csv";
+        try
+        {
+        BufferedWriter fw = new BufferedWriter(new FileWriter(fname));
+        fw.write("station_num,name,opening_time,closing_time,stop_delay,street,town,postal_code");
+        stat.next();
+        while(stat.isAfterLast() != true)
+        {
+            int station_num = 0;
+            String name = "";
+            Time open = new Time(1, 1, 1);
+            Time close = new Time(1, 1, 1);
+            int stop_delay = 0;
+            String street = "";
+            String town = "";
+            String postal = "";
+            try
+            {
+                station_num = stat.getInt("station_num");
+                name = stat.getString("name");
+                open = stat.getTime("opening_time");
+                close = stat.getTime("closing_time");
+                stop_delay = stat.getInt("stop_delay");
+                street = stat.getString("street");
+                town = stat.getString("town");
+                postal = stat.getString("postal_code");
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            
+            String line = String.format("%d,%s,%s,%s,%d,%s,%s,%s", station_num, name.trim(), open, close, stop_delay, street.trim(), town.trim(),postal.trim());
+            try
+            {
+                fw.newLine();
+                fw.write(line);
+                stat.next();
+            }
+            catch(Exception e)
+            {
+                System.out.println(e.toString());
+            }
+            stat.next();
+        }
+        fw.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.toString());
+        }
+        
     }
 
     public static void export_rail_lines()throws
@@ -2059,7 +2422,7 @@ public class costa_project {
                 distancep = rail.getInt("distance_prev");
                 prev_station = rail.getInt("prev_station");
             }
-            catch(Exception e)
+            catch(SQLException e)
             {
                 System.out.println(e.toString());
             }
@@ -2068,7 +2431,7 @@ public class costa_project {
                 distancen = rail.getInt("distance_next");
                 next_station = rail.getInt("next_station");
             }
-            catch(Exception e)
+            catch(SQLException e)
             {
                 System.out.println(e.toString());
             }
@@ -2078,7 +2441,7 @@ public class costa_project {
                 speed = rail.getInt("speed_limit");
                 station_num = rail.getInt("station_num");
             }
-            catch(Exception e)
+            catch(SQLException e)
             {
                 System.out.println(e.toString());
             }
@@ -2087,13 +2450,97 @@ public class costa_project {
             {
                 fw.newLine();
                 fw.write(line);
-                rail.next();
             }
             catch(Exception e)
             {
                 System.out.println(e.toString());
             }
+            rail.next();
         }
+        fw.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.toString());
+        }
+        //fw.close();
+        
+    }
+    public static void export_routes()throws
+    SQLException, ClassNotFoundException 
+    {
+        
+        Class.forName("org.postgresql.Driver");
+        String url = "jdbc:postgresql://localhost:5432/postgres";
+        Properties props = new Properties();
+        props.setProperty("user", "username"); //made this a superuser
+        props.setProperty("password", "password"); 
+        Connection conn =
+                DriverManager.getConnection(url, props);
+        Statement st = conn.createStatement();
+        ResultSet route = st.executeQuery("SELECT * FROM STATION_ROUTE_RELATION");
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("Type the filename ");
+        String fname = myObj.nextLine() +".csv";
+        try
+        {
+        BufferedWriter fw = new BufferedWriter(new FileWriter(fname));
+        fw.write("line_id,route_id,station_num,stop,station_next,distance,speed_limit,order");
+        route.next();
+        while(route.isAfterLast() != true)
+        {
+            int line_id = 0;
+            int speed = 0;
+            int station_num = 0;
+            int distance = 0;
+            int route_id = 0;
+            int order = 0;
+            int next_station = 0;
+            Boolean stop = false;
+            try
+            {
+                order = route.getInt("order");
+                
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            try
+            {
+                distance = route.getInt("distance");
+                next_station = route.getInt("station_next");
+                
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            try
+            {
+                route_id = route.getInt("route_id");
+                line_id = route.getInt("line_id");
+                speed = route.getInt("speed_limit");
+                station_num = route.getInt("station_num");
+                stop = route.getBoolean("stop");
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            String line = String.format("%d,%d,%d,%b,%d,%d,%d,%d", line_id, route_id, station_num, stop, next_station, distance, speed, order);
+            try
+            {
+                fw.newLine();
+                fw.write(line);
+            }
+            catch(Exception e)
+            {
+                System.out.println(e.toString());
+            }
+            route.next();
+        }
+        fw.close();
         }
         catch(Exception e)
         {
@@ -2102,6 +2549,65 @@ public class costa_project {
         
     }
 
+    public static void export_route_schedule()throws
+    SQLException, ClassNotFoundException 
+    {
+        
+        Class.forName("org.postgresql.Driver");
+        String url = "jdbc:postgresql://localhost:5432/postgres";
+        Properties props = new Properties();
+        props.setProperty("user", "username"); //made this a superuser
+        props.setProperty("password", "password"); 
+        Connection conn =
+                DriverManager.getConnection(url, props);
+        Statement st = conn.createStatement();
+        ResultSet sched = st.executeQuery("SELECT * FROM train_schedule");
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("Type the filename ");
+        String fname = myObj.nextLine() +".csv";
+        try
+        {
+        BufferedWriter fw = new BufferedWriter(new FileWriter(fname));
+        fw.write("schedule_id,route_id,train_id,day,time");
+        sched.next();
+        while(sched.isAfterLast() != true)
+        {
+            int schedule_id = 0;
+            int route_id = 0;
+            int train_id = 0;
+            String day = "";
+            Time tim = new Time(1, 1, 1);
+            try
+            {
+                route_id = sched.getInt("route_id");
+                schedule_id = sched.getInt("schedule_id");
+                train_id = sched.getInt("train_id");
+                day = sched.getString("day");
+                tim = sched.getTime("time");
+            }
+            catch(SQLException e)
+            {
+                System.out.println(e.toString());
+            }
+            String line = String.format("%d,%d,%d,%s,%s", route_id, schedule_id, train_id, day.trim(), tim);
+            try
+            {
+                fw.newLine();
+                fw.write(line);
+            }
+            catch(Exception e)
+            {
+                System.out.println(e.toString());
+            }
+            sched.next();
+        }
+        fw.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.toString());
+        }
+    }
     //delete the database
     public static void delete_database()throws
     SQLException, ClassNotFoundException 
