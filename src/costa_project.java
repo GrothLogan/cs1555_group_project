@@ -993,6 +993,7 @@ public class costa_project {
                 st.executeUpdate("UPDATE TICKET SET payed = true WHERE ticket_id = " + res_id);
                 conn.commit();
                 st.executeUpdate("UPDATE RESERVATION SET ticketed = true WHERE ticket_id = " + res_id);
+                conn.commit();
             }
             catch (SQLException e1) {
                 System.out.println(e1.toString());
@@ -1256,7 +1257,7 @@ public class costa_project {
                 }
 
                 //Find routes that pass through the same stations but don’t have the same stops
-                System.out.println("get ticket");
+                //System.out.println("get ticket");
                 //call to passenger service operator code
             }
             else if (choice == 5)
@@ -1386,7 +1387,7 @@ public class costa_project {
                     System.out.println(e.toString());
                 }
                 //Display the schedule of a route:
-                System.out.println("advanced search");
+                //System.out.println("advanced search");
                 //call to passenger service operator code
             }
             else if (choice == 9)
@@ -1413,12 +1414,12 @@ public class costa_project {
                     {
                         Time depart_time = avail.getTime("departure_time");
                         int h = depart_time.getHours();
-                        CallableStatement cstmt = conn.prepareCall("{? = call int_equal(?,?)}");
-                        cstmt.registerOutParameter(1, Types.BOOLEAN);
-                        cstmt.setInt(1, tim);
-                        cstmt.setInt(2, h);
-                        cstmt.execute();
-                        if(cstmt.getBoolean(1))
+                        //CallableStatement cstmt = conn.prepareCall("{? = call int_equal(?,?)}");
+                        //cstmt.registerOutParameter(1, Types.BOOLEAN);
+                        //cstmt.setInt(1, tim);
+                        //cstmt.setInt(2, h);
+                        //cstmt.execute();
+                        if(tim == h)
                         {
                             System.out.println(avail.getInt("station_start"));
                         }
