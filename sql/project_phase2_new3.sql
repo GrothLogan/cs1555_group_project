@@ -244,7 +244,7 @@ Create or replace FUNCTION  recursion_start(rcustomer_id int, rticket_id int, rd
 returns Boolean as $$
     DECLARE
     C1 Record;
-    S2 CURSOR FOR SELECT * from LEGS WHERE curr = station_start and start_day = rday and working = true and available_seats > 0;
+    ---S2 CURSOR FOR SELECT * from LEGS WHERE curr = station_start and start_day = rday and working = true and available_seats > 0;
     Begin
     ---open S2;
     for C1 in SELECT * from LEGS WHERE curr = station_start and start_day = rday and working = true and available_seats > 0 order by legs_id
@@ -267,7 +267,7 @@ CREATE or REPLACE function line_disruption_function()
 returns trigger as $$
     DECLARE
         w record;
-        S1 CURSOR FOR SELECT * FROM TICKET WHERE adj = True and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
+        ---S1 CURSOR FOR SELECT * FROM TICKET WHERE adj = True and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false));
     begin
     UPDATE ROUTE set working = FALSE WHERE route_id in (SELECT route_id FROM STATION_ROUTE_RELATION WHERE line_id = OLD.line_id);
     UPDATE LEGS set working = FALSE WHERE route_id in (SELECT route_id FROM route WHERE working = false);
@@ -275,7 +275,7 @@ returns trigger as $$
     ---open S1;
     FOR w in SELECT * FROM TICKET WHERE adj = True and ticket_id in (SELECT ticket_id FROM RESERVATION WHERE legs_id in (SELECT legs_id FROM LEGS WHERE working = false))
     LOOP
-        Delete from reservation where ticket_id in (SELECT ticket_id FROM w);
+        Delete from reservation where ticket_id = w.ticket_id;
         if not recursion_start( w.customer_id,w.ticket_id,w.day, w.station_start, w.station_end )
             then
             Delete from ticket where ticket_id = w.ticket_id;
@@ -295,6 +295,7 @@ CREATE or REPLACE function increment_seats()
 returns trigger as $$
     BEGIN
         UPDATE LEGS set available_seats = available_seats + 1 WHERE legs_id = old.legs_id;
+        return old;
     end;$$ language plpgsql;
 drop trigger if exists increment_seats on reservation;
 
