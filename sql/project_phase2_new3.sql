@@ -327,7 +327,7 @@ CREATE or REPLACE FUNCTION reservation_cancel_function()
     BEGIN
        -- update reservation
         DELETE FROM reservation
-        where ticketed ='false' AND time + interval'2 hours' < NEW.time AND day = new.day;
+        where ticketed ='false' AND time + interval'2 hours' > NEW.time AND day = new.day;
         return new;
     END;
     $$
